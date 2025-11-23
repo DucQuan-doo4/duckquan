@@ -23,48 +23,50 @@ pipeline {
             }
         }
 
-        stage('Clean old Docker images') {
-            steps {
-                sh "docker system prune -af || true"
-            }
-        }
-
         stage('Build Docker') {
             steps {
-                sh "docker build --no-cache -t exam2:${IMAGE_TAG} ."
+                sh "docker build -t exam2:${IMAGE_TAG} ."
             }
         }
 
         stage('Login to ECR') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
-                    sh "aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPO"
+                    sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REPO}"
                 }
             }
         }
 
         stage('Tag & Push') {
             steps {
-                sh """
-                docker tag exam2:${IMAGE_TAG} $ECR_REPO:${IMAGE_TAG}
-                docker push $ECR_REPO:${IMAGE_TAG}
-                """
+                sh "docker tag exam2:${IMAGE_TAG} ${ECR_REPO}:${IMAGE_TAG}"
+                sh "docker push ${ECR_REPO}:${IMAGE_TAG}"
+            }
+        }
+
+        stage('Register ECS Task Definition') {
+            steps {
+                script {
+                    // Đọc file task definition template JSON
+                    sh """
+                    sed 's|<IMAGE_TAG>|${IMAGE_TAG}|g' ecs-task-def-template.json > ecs-task-def-${IMAGE_TAG}.json
+                    """
+                    // Đăng ký task definition mới
+                    TASK_DEF_ARN = sh(script: "aws ecs register-task-definition --cli-input-json file://ecs-task-def-${IMAGE_TAG}.json --query 'taskDefinition.taskDefinitionArn' --output text", returnStdout: true).trim()
+                    echo "Registered new task definition: ${TASK_DEF_ARN}"
+                }
             }
         }
 
         stage('Deploy ECS') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                script {
                     sh """
-                    # Lấy task definition hiện tại
-                    TASK_DEF_ARN=$(aws ecs list-task-definitions --family-prefix ${SERVICE_NAME} --sort DESC --max-items 1 | jq -r '.taskDefinitionArns[0]')
-                    
-                    # Cập nhật service với task definition mới
                     aws ecs update-service \
-                        --cluster $CLUSTER_NAME \
-                        --service $SERVICE_NAME \
-                        --force-new-deployment \
-                        --task-definition $TASK_DEF_ARN
+                        --cluster ${CLUSTER_NAME} \
+                        --service ${SERVICE_NAME} \
+                        --task-definition ${TASK_DEF_ARN} \
+                        --force-new-deployment
                     """
                 }
             }
