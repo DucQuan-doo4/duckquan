@@ -46,17 +46,15 @@ pipeline {
 
         stage('Register ECS Task Definition') {
             steps {
-                script {
-                    // Đọc file task definition template JSON
+                withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
                     sh """
-                    sed 's|<IMAGE_TAG>|${IMAGE_TAG}|g' ecs-task-def-template.json > ecs-task-def-${IMAGE_TAG}.json
+                    sed s|<IMAGE_TAG>|${IMAGE_TAG}|g ecs-task-def-template.json > ecs-task-def-${IMAGE_TAG}.json
+                    aws ecs register-task-definition --cli-input-json file://ecs-task-def-${IMAGE_TAG}.json --query taskDefinition.taskDefinitionArn --output text
                     """
-                    // Đăng ký task definition mới
-                    TASK_DEF_ARN = sh(script: "aws ecs register-task-definition --cli-input-json file://ecs-task-def-${IMAGE_TAG}.json --query 'taskDefinition.taskDefinitionArn' --output text", returnStdout: true).trim()
-                    echo "Registered new task definition: ${TASK_DEF_ARN}"
                 }
             }
         }
+
 
         stage('Deploy ECS') {
             steps {
