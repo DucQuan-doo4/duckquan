@@ -47,13 +47,15 @@ pipeline {
         stage('Register ECS Task Definition') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
-                    sh """
-                    sed s|<IMAGE_TAG>|${IMAGE_TAG}|g ecs-task-def-template.json > ecs-task-def-${IMAGE_TAG}.json
-                    aws ecs register-task-definition --cli-input-json file://ecs-task-def-${IMAGE_TAG}.json --query taskDefinition.taskDefinitionArn --output text
-                    """
+                    script {
+                        def taskDefFile = "ecs-task-def-${IMAGE_TAG}.json"
+                        sh "sed 's|<IMAGE_TAG>|${IMAGE_TAG}|g' ecs-task-def-template.json > ${taskDefFile}"
+                        sh "aws ecs register-task-definition --cli-input-json file://${taskDefFile} --query taskDefinition.taskDefinitionArn --output text"
+                    }
                 }
             }
         }
+
 
 
         stage('Deploy ECS') {
