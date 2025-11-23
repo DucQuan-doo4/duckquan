@@ -93,6 +93,6 @@ const initDb = () => {
 };
 
 app.listen(port, () => {
-  console.log(`API listening at http://localhost:${port}`);
+  console.log(`listening at http://localhost:${port}`);
   initDb();
 });
