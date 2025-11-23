@@ -61,18 +61,22 @@ pipeline {
 
         stage('Deploy ECS') {
             steps {
-                script {
-                    sh """
-                    aws ecs update-service \
-                        --cluster ${CLUSTER_NAME} \
-                        --service ${SERVICE_NAME} \
-                        --task-definition ${TASK_DEF_ARN} \
-                        --force-new-deployment
-                    """
+                withCredentials([usernamePassword(credentialsId: 'aws-creds', 
+                                                  usernameVariable: 'AWS_ACCESS_KEY_ID', 
+                                                  passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    script {
+                        sh """
+                        aws ecs update-service \
+                            --cluster ${CLUSTER_NAME} \
+                            --service ${SERVICE_NAME} \
+                            --task-definition ${TASK_DEF_ARN} \
+                            --force-new-deployment
+                        """
+                    }
                 }
             }
         }
-    }
+
 
     post {
         success {
