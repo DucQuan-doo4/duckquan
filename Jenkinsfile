@@ -17,7 +17,7 @@ pipeline {
         stage('Get Commit Hash') {
             steps {
                 script {
-                    IMAGE_TAG = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+                    def IMAGE_TAG = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
                     echo "Using image tag: ${IMAGE_TAG}"
                 }
             }
@@ -50,17 +50,19 @@ pipeline {
                     script {
                         def taskDefFile = "ecs-task-def-${IMAGE_TAG}.json"
                         sh "sed 's|<IMAGE_TAG>|${IMAGE_TAG}|g' ecs-task-def-template.json > ${taskDefFile}"
-                        sh "aws ecs register-task-definition --cli-input-json file://${taskDefFile} --query taskDefinition.taskDefinitionArn --output text"
+                        
+                        // Lấy ARN của task definition và gán vào biến TASK_DEF_ARN
+                        def TASK_DEF_ARN = sh(script: "aws ecs register-task-definition --cli-input-json file://${taskDefFile} --query taskDefinition.taskDefinitionArn --output text", returnStdout: true).trim()
+                        echo "TASK_DEF_ARN: ${TASK_DEF_ARN}"
                     }
                 }
             }
         }
 
-
-
         stage('Deploy ECS') {
             steps {
                 script {
+                    // Sử dụng TASK_DEF_ARN đã khai báo ở stage trước
                     sh """
                     aws ecs update-service \
                         --cluster ${CLUSTER_NAME} \
