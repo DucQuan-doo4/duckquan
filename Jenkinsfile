@@ -23,9 +23,15 @@ pipeline {
             }
         }
 
+        stage('Clean old Docker images') {
+            steps {
+                sh "docker system prune -af || true"
+            }
+        }
+
         stage('Build Docker') {
             steps {
-                sh "docker build -t exam2:${IMAGE_TAG} ."
+                sh "docker build --no-cache -t exam2:${IMAGE_TAG} ."
             }
         }
 
@@ -50,10 +56,15 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
                     sh """
+                    # Lấy task definition hiện tại
+                    TASK_DEF_ARN=$(aws ecs list-task-definitions --family-prefix ${SERVICE_NAME} --sort DESC --max-items 1 | jq -r '.taskDefinitionArns[0]')
+                    
+                    # Cập nhật service với task definition mới
                     aws ecs update-service \
                         --cluster $CLUSTER_NAME \
                         --service $SERVICE_NAME \
-                        --force-new-deployment
+                        --force-new-deployment \
+                        --task-definition $TASK_DEF_ARN
                     """
                 }
             }
