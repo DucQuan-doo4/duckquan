@@ -87,12 +87,12 @@ const initDb = () => {
             // KHÔNG DÙNG process.exit(1) → FARGATE SẼ HỦY TASK
             console.log("Continuing without table creation. Check DB connection or SG.");
         } else {
-            console.log("Table 'quotes' is ready.");
+            console.log("Table 'quotes' is ready!!!.");
         }
     });
 };
 
 app.listen(port, () => {
-  console.log(`TechStart API listening at http://localhost:${port}`);
+  console.log(`API listening at http://localhost:${port}`);
   initDb();
 });
