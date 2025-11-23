@@ -59,7 +59,7 @@ pipeline {
             }
         }
 
-        stage('Deploy ECS') {
+                stage('Deploy ECS') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'aws-creds', 
                                                   usernameVariable: 'AWS_ACCESS_KEY_ID', 
@@ -73,9 +73,10 @@ pipeline {
                             --force-new-deployment
                         """
                     }
-                }
-            }
-        }
+                } // đóng withCredentials
+            } // đóng steps
+        } // đóng stage
+
 
 
     post {
