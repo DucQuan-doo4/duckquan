@@ -1,10 +1,10 @@
 {
-  "family": "exam2-service-s1aceznj",
+  "family": "",
   "networkMode": "awsvpc",
   "containerDefinitions": [
     {
-      "name": "container1",
-      "image": "591313757404.dkr.ecr.us-east-1.amazonaws.com/exam2:<IMAGE_TAG>",
+      "name": "#ten_container",
+      "image": "ecr:<IMAGE_TAG>",
       "memory": 512,
       "cpu": 256,
       "essential": true,
@@ -19,5 +19,5 @@
   "requiresCompatibilities": ["FARGATE"],
   "cpu": "256",
   "memory": "512",
-  "executionRoleArn": "arn:aws:iam::591313757404:role/ecsTaskExecutionRole"
+  "executionRoleArn": "arn:aws:iam::#id_account:role/ecsTaskExecutionRole"
 }
